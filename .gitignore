@@ -1,3 +1,12 @@
+# https://github.com/github/gitignore/blob/master/C.gitignore
+
+# VSCode files
+.vs/
+.vscode/
+
+# Build files
+build/
+
 # Prerequisites
 *.d
 
@@ -50,3 +59,16 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# cscope with Vim
+cscope.*
+
+#ctags with Vim
+tags
+types_c.taghl
+
+#CtrlP
+ctrlp.root
+
+#html
+*.html
