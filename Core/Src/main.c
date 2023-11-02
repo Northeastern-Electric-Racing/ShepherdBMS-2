@@ -4,14 +4,6 @@
   * @file           : main.c
   * @brief          : Main program body
   ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -22,7 +14,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 // #include <nerduino.h>
-#include <Watchdog_t4.h>
+// TODO: import and replace new watchdog library
+//#include <Watchdog_t4.h>
 #include <LTC68041.h>
 #include "segment.h"
 #include "compute.h"
@@ -66,7 +59,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
 WDT_T4<WDT1> wdt;
-AccumulatorData_t *prevAccData = nullptr;
+AccumulatorData_t *prev_acc_data = nullptr;
 StateMachine stateMachine;
 /* USER CODE END PV */
 
@@ -88,40 +81,40 @@ static void MX_USB_OTG_FS_PCD_Init(void);
 /* USER CODE BEGIN 0 */
 #ifdef DEBUG_STATS
 
-const void printBMSStats(AccumulatorData_t *accData)
+const void print_bms_stats(AccumulatorData_t *acc_data)
 {
-	static Timer debug_statTimer;
+	static Timer debug_stat_timer;
 	static const uint16_t PRINT_STAT_WAIT = 500; //ms
 
-	if(!debug_statTimer.isTimerExpired()) return;
+	if(!debug_stat_timer.isTimerExpired()) return;
 
 	Serial.print("Prev Fault: 0x");
 	Serial.println(stateMachine.previousFault, HEX);
 	Serial.print("Current: ");
-	Serial.println((float)(accData->pack_current) / 10.0);
+	Serial.println((float)(acc_data->pack_current) / 10.0);
 	Serial.print("Min, Max, Avg Temps: ");
-	Serial.print(accData->min_temp.val);
+	Serial.print(acc_data->min_temp.val);
 	Serial.print(",  ");
-	Serial.print(accData->max_temp.val);
+	Serial.print(acc_data->max_temp.val);
 	Serial.print(",  ");
-	Serial.println(accData->avg_temp);
+	Serial.println(acc_data->avg_temp);
 	Serial.print("Min, Max, Avg, Delta Voltages: ");
-	Serial.print(accData->min_voltage.val);
+	Serial.print(acc_data->min_voltage.val);
 	Serial.print(",  ");
-	Serial.print(accData->max_voltage.val);
+	Serial.print(acc_data->max_voltage.val);
 	Serial.print(",  ");
-	Serial.print(accData->avg_voltage);
+	Serial.print(acc_data->avg_voltage);
 	Serial.print(",  ");
-	Serial.println(accData->delt_voltage);
+	Serial.println(acc_data->delt_voltage);
 
 	Serial.print("DCL: ");
-	Serial.println(accData->discharge_limit);
+	Serial.println(acc_data->discharge_limit);
 
 	Serial.print("CCL: ");
-	Serial.println(accData->charge_limit);
+	Serial.println(acc_data->charge_limit);
 
 	Serial.print("SoC: ");
-	Serial.println(accData->soc);
+	Serial.println(acc_data->soc);
 
 	Serial.print("Is Balancing?: ");
 	Serial.println(segment.isBalancing());
@@ -137,7 +130,7 @@ const void printBMSStats(AccumulatorData_t *accData)
 	{
 		for(uint8_t cell = 0; cell < NUM_CELLS_PER_CHIP; cell++)
 		{
-			Serial.print(accData->chip_data[c].voltage_reading[cell]);
+			Serial.print(acc_data->chip_data[c].voltage_reading[cell]);
 			Serial.print("\t");
 		}
 		Serial.println();
@@ -148,7 +141,7 @@ const void printBMSStats(AccumulatorData_t *accData)
 	{
 		for(uint8_t cell = 0; cell < NUM_CELLS_PER_CHIP; cell++)
 		{
-			Serial.print(accData->chip_data[c].open_cell_voltage[cell]);
+			Serial.print(acc_data->chip_data[c].open_cell_voltage[cell]);
 			Serial.print("\t");
 		}
 		Serial.println();
@@ -159,7 +152,7 @@ const void printBMSStats(AccumulatorData_t *accData)
 	{
 		for(uint8_t cell = 17; cell < 28; cell++)
 		{
-			Serial.print(accData->chip_data[c].thermistor_reading[cell]);
+			Serial.print(acc_data->chip_data[c].thermistor_reading[cell]);
 			Serial.print("\t");
 		}
 		Serial.println();
@@ -170,14 +163,14 @@ const void printBMSStats(AccumulatorData_t *accData)
 	{
 		for(uint8_t cell = 17; cell < 28; cell++)
 		{
-			Serial.print(accData->chip_data[c].thermistor_value[cell]);
+			Serial.print(acc_data->chip_data[c].thermistor_value[cell]);
 			Serial.print("\t");
 		}
 		Serial.println();
 	}
 
 
-	debug_statTimer.startTimer(PRINT_STAT_WAIT);
+	debug_stat_timer.startTimer(PRINT_STAT_WAIT);
 }
 
 
@@ -205,7 +198,7 @@ int main(void)
   config.timeout = 15;        /* in seconds, 0->128 */
   wdt.begin(config);
 //   NERduino.begin();
-  compute.setFault(NOT_FAULTED);
+  compute.compute_set_fault(NOT_FAULTED);
   segment.init();
   /* USER CODE END Init */
 
@@ -233,22 +226,22 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
 	//Create a dynamically allocated structure
-	AccumulatorData_t *accData = new AccumulatorData_t;
+	AccumulatorData_t *acc_data = new AccumulatorData_t;
 
-	//accData->faultCode = FAULTS_CLEAR;
+	//acc_data->faultCode = FAULTS_CLEAR;
 
 	//Collect all the segment data needed to perform analysis
 	//Not state specific
-	segment.retrieveSegmentData(accData->chip_data);
-	accData->pack_current = compute.getPackCurrent();
+	segment_retrieve_segment_data(acc_data->chip_data);
+	acc_data->pack_current = compute.compute_get_pack_current();
 
 	//Perform calculations on the data in the frame
-	analyzer.push(accData);
+	analyzer.push(acc_data);
 
-	stateMachine.handleState(accData);
+	stateMachine_sm_handle_state(acc_data);
 
 	#ifdef DEBUG_STATS
-	printBMSStats(analyzer.bmsdata);
+	print_bms_stats(analyzer.bmsdata);
 	#endif
 
 	wdt.feed();

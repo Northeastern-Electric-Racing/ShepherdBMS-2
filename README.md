@@ -45,6 +45,9 @@ serial
 flash
 # Actual command is:
 # openocd -f interface/cmsis-dap.cfg -f target/stm32f4x.cfg -c "adapter speed 5000" -c "program ./build/cerberus.elf verify reset exit"
+
+# to autoformat code
+clang-format -style=file -i whateverfile.c
 ```
 ### Mounting Hardware to Docker Container in Windows
 > Very specific use case but nonetheless needed, also documented in the above confluence page, on macOS and Linux this happens by default when running privileged docker container
