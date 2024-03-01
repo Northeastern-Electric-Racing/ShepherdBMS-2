@@ -4,6 +4,7 @@
 #include "datastructs.h"
 #include "stateMachine.h"
 #include "ringbuffer.h"
+#include "can.h"
 
 #define CURRENT_SENSOR_PIN_L A1
 #define CURRENT_SENSOR_PIN_H A0
@@ -14,6 +15,9 @@
 #define CHARGER_BAUD		 250000U
 #define MC_BAUD				 1000000U
 #define MAX_ADC_RESOLUTION	 1023 // 13 bit ADC
+
+extern can_t can1; // main can bus, used by most peripherals
+extern can_t can2; // p2p can bus with charger
 
 /**
  * @brief inits the compute interface

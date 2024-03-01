@@ -1,9 +1,10 @@
 #ifndef CAN_HANDLER_H
 #define CAN_HANDLER_H
 
-#include "can.h"
 #include "stm32f4xx_hal.h"
 #include <stdint.h>
+#include "can.h"
+#include "compute.h"
 
 
 #define NUM_INBOUND_CAN1_IDS 1

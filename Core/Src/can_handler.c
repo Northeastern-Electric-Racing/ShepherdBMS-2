@@ -1,6 +1,7 @@
 #include "analyzer.h"
 #include "ringbuffer.h"
 #include "can_handler.h"
+#include <string.h>
 
 ringbuffer_t* can1_rx_queue = NULL;
 ringbuffer_t* can2_rx_queue = NULL;
@@ -15,6 +16,21 @@ void can_receive_callback(CAN_HandleTypeDef* hcan)
 		// TODO add non crtical fault capability - could create one for failed can receieve
 		return;
 	}
+
+	struct __attribute__((packed)) {
+		uint16_t maxDischarge;
+		uint16_t maxCharge;
+	} data;
+
+	data.maxCharge	  = 1;
+	data.maxDischarge = 8;
+
+	can_msg_t msg;
+	msg.id = 0x19;
+	msg.len = sizeof(data);
+	memcpy(msg.data, &data, sizeof(data));
+
+	can_send_msg(&can1, &msg);
 
 	new_msg.len = rx_header.DLC;
 	new_msg.id	= rx_header.StdId;
