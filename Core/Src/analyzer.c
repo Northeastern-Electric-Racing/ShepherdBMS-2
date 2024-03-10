@@ -53,7 +53,7 @@ const uint8_t TEMP_TO_CCL[14] =
 	20, 15, 10, 5, 1, 1
 };
 
-/**
+/** 
  * @brief Lookup table for State of Charge
  *
  * @note each index covers 0.1V increase (voltage range is 2.9V - 4.2V, deltaV = 1.3V, 
@@ -499,28 +499,47 @@ void disable_therms()
 	}
 }
 
+uint32_t last_tick = 0;
+
 void calc_state_of_charge()
 {
-	/* Spltting the delta voltage into 18 increments */
-	const uint16_t increments
-		= ((uint16_t)(MAX_VOLT * 10000 - MIN_VOLT * 10000) / ((MAX_VOLT - MIN_VOLT) * 10));
 
-	/* Retrieving a index of 0-18 */
-	uint8_t index = ((bmsdata->min_ocv.val) - MIN_VOLT * 10000) / increments;
+	if (bmsdata->pack_current) {
 
-	bmsdata->soc = STATE_OF_CHARGE_CURVE[index];
+		int32_t delta_time = HAL_GetTick() - last_tick;
+		int32_t new_voltage = bmsdata->pack_voltage + delta_time * (bmsdata->pack_current * 100);
 
-	if (bmsdata->soc != 100) {
-		float interpolation
-			= (float)(STATE_OF_CHARGE_CURVE[index + 1] - STATE_OF_CHARGE_CURVE[index]) / increments;
-		bmsdata->soc
-			+= (uint8_t)(interpolation
-						 * (((bmsdata->min_ocv.val) - (int32_t)(MIN_VOLT * 10000)) % increments));
+		//State of charge as a percentage of max charge
+		uint8_t soc = (uint8_t) ((new_voltage - MIN_VOLT * 10000) / MAX_VOLT * 10000);
+
+		bmsdata->soc = soc;
+
+	} else {
+		/* Spltting the delta voltage into 18 increments */
+		const uint16_t increments
+			= ((uint16_t)(MAX_VOLT * 10000 - MIN_VOLT * 10000) / ((MAX_VOLT - MIN_VOLT) * 10));
+
+		/* Retrieving a index of 0-18 */
+		uint8_t index = ((bmsdata->min_ocv.val) - MIN_VOLT * 10000) / increments;
+
+		bmsdata->soc = STATE_OF_CHARGE_CURVE[index];
+
+		if (bmsdata->soc != 100) {
+			float interpolation
+				= (float)(STATE_OF_CHARGE_CURVE[index + 1] - STATE_OF_CHARGE_CURVE[index]) / increments;
+			bmsdata->soc
+				+= (uint8_t)(interpolation
+							* (((bmsdata->min_ocv.val) - (int32_t)(MIN_VOLT * 10000)) % increments));
+		}
 	}
 
+	last_tick = HAL_GetTick();
+	
 	if (bmsdata->soc < 0) {
 		bmsdata->soc = 0;
 	}
+
+	
 }
 
 void high_curr_therm_check()

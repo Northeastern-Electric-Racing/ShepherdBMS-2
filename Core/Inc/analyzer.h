@@ -4,6 +4,7 @@
 //#include <nerduino.h> Replace
 #include "datastructs.h"
 #include "segment.h"
+#include "stm32f4xx_hal.h"
 
 /* We want to make sure we aren't doing useless analysis on the same set of data since we are
  * backfilling segment data */
