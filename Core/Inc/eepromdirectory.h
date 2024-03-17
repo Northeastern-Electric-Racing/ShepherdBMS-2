@@ -89,5 +89,6 @@ void log_fault(uint32_t fault_code);
 
 void get_faults();
 
+bool test_EEPROM();
 
 #endif
