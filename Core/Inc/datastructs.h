@@ -59,6 +59,17 @@ typedef enum {
 // clang-format on
 
 /**
+ * @brief Enuemrated possible non-critical fault codes for the BMS
+ * @note  the values increase at powers of two to perform bitwise operations on a main fault code
+ *          to set or get the error codes
+ */
+typedef enum {
+	/* non-critical cases */
+	FAILED_CAN_RECEIVAL					= 0x1,
+
+} bms_nc_fault_t;
+
+/**
  * @brief Stores critical values for the pack, and where that critical value can be found
  *
  */
@@ -122,6 +133,23 @@ typedef struct {
 
 	bool is_charger_connected;
 } acc_data_t;
+
+typedef struct 
+{
+	nertimer_t timer;
+	int timeout;
+
+	int can_receivals;
+	
+
+	/**
+	 * @brief Note that this is a 32 bit integer, so there are 32 max possible fault codes
+	 */
+	uint32_t fault_code;
+	uint32_t fault_status;
+
+} nc_fault_collection_t;
+
 
 /**
  * @brief Represents individual BMS states
