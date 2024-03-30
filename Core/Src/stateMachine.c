@@ -6,6 +6,7 @@ extern UART_HandleTypeDef huart4;
 
 acc_data_t* prevAccData;
 uint32_t bms_fault = FAULTS_CLEAR;
+uint32_t bms_nc_fault = FAULTS_CLEAR;
 
 BMSState_t current_state = BOOT_STATE;
 uint32_t previousFault = 0;
@@ -289,6 +290,13 @@ uint32_t sm_fault_eval(fault_eval_t* index)
 	}
 
 	return 0;
+}
+
+void sm_nc_fault_collect(nc_fault_collection_t *nc_fault_data) {
+	switch (nc_fault_data->fault_code) {
+		case FAILED_CAN_RECEIVAL: nc_fault_data->can_fault += 1; break;
+		default: break;
+	}
 }
 
 bool sm_charging_check(acc_data_t* bmsdata)

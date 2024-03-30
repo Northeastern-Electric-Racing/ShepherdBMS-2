@@ -48,6 +48,15 @@ uint32_t sm_fault_return(acc_data_t *accData);
  */
 uint32_t sm_fault_eval(fault_eval_t* index);
 
+ /**
+ * @brief Used to collect non-critical fault codes to append to the current status
+ * 
+ * @param nc_fault_data
+ * @param fault_code
+ * @return fault_code
+ */
+void sm_nc_fault_collect(nc_fault_collection_t *nc_fault_data);
+
 /**
  * @brief handles the state machine, calls the appropriate handler function and runs every loop functions
  * 
