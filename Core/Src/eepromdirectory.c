@@ -165,3 +165,104 @@ void get_faults()
         }
     }
 }
+
+//TODO: Consolidate these into a single function after testing
+bool test_EEPROM(){
+    test_main_EEPROM();
+    test_fault_EEPROM();
+}
+
+//TODO: Verify that this code works as intended in hardware
+bool test_main_EEPROM(){
+    uint8_t reg_to_write;
+    uint8_t root_address = eeprom_get_index((char*)("ROOT"));
+    uint8_t initial_data = eeprom_read_data_address(root_address, &reg_to_write, 1);
+
+    // Write a known data value to a certain address in EEPROM and read it back
+    uint8_t known_data = 22;
+    uint8_t data_read;
+    eeprom_write_data_address(root_address, &reg_to_write, 1);
+    eeprom_read_data_address(root_address, &data_read, 1);
+
+    if (data_read == known_data){
+        printf("Data was successfully written and read from EEPROM");
+    }
+    else{
+        printf("Data was not successfully written/read from EEPROM");
+    }
+
+    // Write data previously stored in EEPROM address back to EEPROM
+    eeprom_write_data_address(root_address, &reg_to_write, 1);
+}
+
+//TODO: Verify that this code works as intended in hardware
+bool test_fault_EEPROM(){
+    uint8_t start_Address = eeprom_data[eeprom_get_index((char*)("FAULTS"))].address;
+    uint8_t curr_Address = start_Address;
+    uint8_t size = eeprom_data[eeprom_get_index((char*)("FAULTS"))].size;
+
+    uint32_t read_Faults[NUM_EEPROM_FAULTS];
+
+    // Loop to read the state of the entire fault log before doing any test reads/writes to it
+    int curr_Iter = 0;
+    while (curr_Iter < NUM_EEPROM_FAULTS){
+        eeprom_read_data_address(curr_Address, &read_Faults[curr_Iter], 4);
+        curr_Iter++;
+
+        /* If the index is at the end of the partition, wrap around (5 faults * 4 bytes per fault + offset -3 for start of fault) */
+        if (curr_Address == size + start_Address - 3){
+            // First byte of partition is index of most recent fault, faults begin at the second byte
+            curr_Address = start_Address + 1;
+        }
+        else{
+            curr_Address += 4;
+        }
+    }
+
+    // Write known data value to EEPROM fault register
+    uint32_t sample_fault = 0xBEEF;
+    uint32_t temp_Faults[NUM_EEPROM_FAULTS];
+    uint32_t test_fault = 0xABBA;
+    uint8_t index_reg;
+
+    curr_Address = start_Address;
+    curr_Iter = 0;
+    while (curr_Iter < NUM_EEPROM_FAULTS){
+        log_fault(sample_fault);
+        eeprom_read_data_address(curr_Address, &temp_Faults[curr_Iter], 4);
+        curr_Iter++;
+
+        if (temp_Faults[curr_Iter] == sample_fault){
+            printf("Data successfully written and read from EEPROM fault register");
+        }
+        else{
+            printf("Data was not successfully written and read from EEPROM fault register");
+        }
+
+        if (curr_Address == size + start_Address - 3){
+            curr_Address = start_Address + 1;
+        }
+        else{
+            curr_Address += 4;
+        }
+    }
+
+    // Write one more fault, which overwrites the first sample fault we put in the register
+    eeprom_read_data_key("FAULTS", &index_reg, 1);
+    log_fault(test_fault);
+    eeprom_read_data_address(curr_Address, &temp_Faults[index_reg], 4);
+
+    if (temp_Faults[index_reg] == test_fault){
+        printf("Old fault successfully overwritten");
+    }
+    else{
+        printf("Old fault was not overwritten");
+    }
+
+    // Re-write old faults back into register
+    curr_Iter = 0;
+    while (curr_Iter < NUM_EEPROM_FAULTS){
+        log_fault(read_Faults[curr_Iter]);
+        curr_Iter++;
+    }
+}
