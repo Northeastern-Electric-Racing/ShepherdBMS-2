@@ -105,6 +105,18 @@ void compute_send_mc_charge_message(acc_data_t* bmsdata);
 void compute_set_fault(int fault_state);
 
 /**
+ * @brief set that the BMS is on the charger cart
+ * @note this is latching with "is_on_car" such that it can't enter on car if we are on charger
+ */
+void compute_set_charger_connected();
+
+/**
+ * @brief set that BMS is on the car (should never go low, we power cycle before charging)
+ * @note this is latching with "is_charger_connected" such that it can't enter charging if we are on car
+ */
+void compute_set_is_on_car();
+
+/**
  * @brief sends acc status message
  *
  * @param voltage

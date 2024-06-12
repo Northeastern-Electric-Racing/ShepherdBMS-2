@@ -84,7 +84,7 @@ void handle_ready(acc_data_t* bmsdata)
 {
 	/* check for charger connection */
 	if (compute_charger_connected() && is_timer_expired(&bootup_timer)) { //TODO Fix once charger works
-		request_transition(READY_STATE);
+		request_transition(CHARGING_STATE);
 	} else {
 		sm_broadcast_current_limit(bmsdata);
 		return;

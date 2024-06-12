@@ -34,6 +34,10 @@ ADC_ChannelConfTypeDef adc_config;
 
 const uint32_t fan_channels[6] = {TIM_CHANNEL_3, TIM_CHANNEL_1, TIM_CHANNEL_4, TIM_CHANNEL_3, TIM_CHANNEL_2, TIM_CHANNEL_1};
 
+/* Probably just need to do one of these variables but eh I'm redundant */
+static bool is_charger_connected;
+static bool is_on_car;
+
 can_t can1; // main can bus, used by most peripherals
 can_t can2; // p2p can bus with charger
 
@@ -98,12 +102,14 @@ int compute_send_charging_message(uint16_t voltage_to_set, uint16_t current_to_s
 	} charger_msg_data;
 
 	charger_msg_data.charger_voltage = voltage_to_set * 10;
-	charger_msg_data.charger_current = current_to_set * 10;
+	// Override charging to charge at 3.5A (or 0 if charging disabled)
+	charger_msg_data.charger_current = current_to_set == 0 ? 0 : 35;
+	printf("Current Requested: %d \r\n", charger_msg_data.charger_current);
 
     if (is_charging_enabled) {
         charger_msg_data.charger_control = 0x00;  //0：Start charging.
     } else {
-        charger_msg_data.charger_control = 0xFF;  // 1：battery protection, stop charging
+        charger_msg_data.charger_control = 0x01;  // 1：battery protection, stop charging
     }
 
     charger_msg_data.reserved_1 = 0x00;
@@ -121,20 +127,26 @@ int compute_send_charging_message(uint16_t voltage_to_set, uint16_t current_to_s
 	charger_msg.data[2] = charger_msg.data[3];
 	charger_msg.data[3] = temp;
 
-	#ifdef CHARGING_ENABLED
-	HAL_StatusTypeDef res = can_send_extended_msg(&can2, &charger_msg);
-	if(res != HAL_OK) {
-		printf("CAN ERROR CODE %X", res);
+	if (is_charger_connected) {
+		HAL_StatusTypeDef res = can_send_extended_msg(&can2, &charger_msg);
+		if(res != HAL_OK) {
+			printf("CAN ERROR CODE %X", res);
+		}
 	}
-	#endif
 
 	return 0;
+}
+
+void compute_set_charger_connected()
+{
+	if (!is_on_car)
+		is_charger_connected = true;;
 }
 
 bool compute_charger_connected()
 {
 	//TODO need to set up CAN msg that actually toggles this bool
-	return false; //bmsdata->is_charger_connected;
+	return is_charger_connected; //bmsdata->is_charger_connected;
 }
 
 //TODO add this back
@@ -163,6 +175,12 @@ void compute_set_fault(int fault_state)
 	//TODO work with charger fw on this
 	HAL_GPIO_WritePin(GPIOA, Fault_Output_Pin, !fault_state);
 	 //if (true) digitalWrite(CHARGE_SAFETY_RELAY, 1);
+}
+
+void compute_set_is_on_car()
+{
+	if (!is_charger_connected)
+		is_on_car = true;
 }
 
 int16_t compute_get_pack_current()
@@ -283,6 +301,7 @@ void compute_send_mc_charge_message(acc_data_t* bmsdata)
 
 void compute_send_acc_status_message(acc_data_t* bmsdata)
 {
+	can_t *line;
 
 	struct __attribute__((__packed__)){
 		uint16_t packVolt;
@@ -308,17 +327,18 @@ void compute_send_acc_status_message(acc_data_t* bmsdata)
 	acc_msg.len = sizeof(acc_status_msg_data);
 	memcpy(acc_msg.data, &acc_status_msg_data, sizeof(acc_status_msg_data));
 
-	#ifdef CHARGING_ENABLED
-	can_t* line = &can2;
-	#else
-	can_t* line = &can1;
-	#endif
+	if (is_charger_connected)
+		line = &can2;
+	else
+		line = &can1;
 
 	can_send_msg(line, &acc_msg);
 }
 
 void compute_send_bms_status_message(acc_data_t* bmsdata, int bms_state, bool balance)
 {
+	can_t *line;
+
     struct  __attribute__((__packed__)){
         uint8_t state;
         uint32_t fault;
@@ -341,16 +361,18 @@ void compute_send_bms_status_message(acc_data_t* bmsdata, int bms_state, bool ba
     acc_msg.len = sizeof(bms_status_msg_data);	
     memcpy(acc_msg.data, &bms_status_msg_data, sizeof(bms_status_msg_data));
 
-	#ifdef CHARGING_ENABLED
-	can_t* line = &can2;
-	#else
-	can_t* line = &can1;
-	#endif
+	if (is_charger_connected)
+		line = &can2;
+	else
+		line = &can1;
+
     can_send_msg(line, &acc_msg);
 }
 
 void compute_send_shutdown_ctrl_message(uint8_t mpe_state)
 {
+	can_t *line;
+
     struct __attribute__((__packed__)){
         uint8_t mpeState;
     } shutdown_control_msg_data;
@@ -362,17 +384,18 @@ void compute_send_shutdown_ctrl_message(uint8_t mpe_state)
     acc_msg.len = sizeof(shutdown_control_msg_data);
     memcpy(acc_msg.data, &shutdown_control_msg_data, sizeof(shutdown_control_msg_data));
 
-	#ifdef CHARGING_ENABLED
-	can_t* line = &can2;
-	#else
-	can_t* line = &can1;
-	#endif
+	if (is_charger_connected)
+		line = &can2;
+	else
+		line = &can1;
 
     can_send_msg(line, &acc_msg);
 }
 
 void compute_send_cell_data_message(acc_data_t* bmsdata)
 {
+	can_t* line;
+
     struct __attribute__((__packed__)){
         uint16_t high_cell_voltage;
         uint8_t high_cell_id;
@@ -397,11 +420,10 @@ void compute_send_cell_data_message(acc_data_t* bmsdata)
     acc_msg.len = sizeof(cell_data_msg_data);
     memcpy(acc_msg.data, &cell_data_msg_data, sizeof(cell_data_msg_data));
 
-	#ifdef CHARGING_ENABLED
-	can_t* line = &can2;
-	#else
-	can_t* line = &can1;
-	#endif
+	if (is_charger_connected)
+		line = &can2;
+	else
+		line = &can1;
 
     can_send_msg(line, &acc_msg);
 }
@@ -410,6 +432,7 @@ void compute_send_cell_voltage_message(uint8_t cell_id, uint16_t instant_voltage
                                        uint16_t internal_Res, uint8_t shunted,
                                        uint16_t open_voltage)
 {
+	can_t *line;
     struct __attribute__((__packed__)){
         uint8_t cellID;
         uint16_t instantVoltage;
@@ -434,17 +457,18 @@ void compute_send_cell_voltage_message(uint8_t cell_id, uint16_t instant_voltage
     acc_msg.len = sizeof(cell_voltage_msg_data);
     memcpy(acc_msg.data, &cell_voltage_msg_data, sizeof(cell_voltage_msg_data));
 
-	#ifdef CHARGING_ENABLED
-	can_t* line = &can2;
-	#else
-	can_t* line = &can1;
-	#endif
+	if (is_charger_connected)
+		line = &can2;
+	else
+		line = &can1;
 
     can_send_msg(line, &acc_msg);
 }
 
 void compute_send_current_message(acc_data_t* bmsdata)
 {
+	can_t *line;
+
     struct __attribute__((__packed__)){
         uint16_t dcl;
         int16_t ccl;
@@ -465,17 +489,18 @@ void compute_send_current_message(acc_data_t* bmsdata)
     acc_msg.len = sizeof(current_status_msg_data);
     memcpy(acc_msg.data, &current_status_msg_data, sizeof(current_status_msg_data));
 
-	#ifdef CHARGING_ENABLED
-	can_t* line = &can2;
-	#else
-	can_t* line = &can1;
-	#endif
+	if (is_charger_connected)
+		line = &can2;
+	else
+		line = &can1;
 
     can_send_msg(line, &acc_msg);
 }
 
 void compute_send_cell_temp_message(acc_data_t* bmsdata)
 {
+	can_t *line;
+
     struct __attribute__((__packed__)){
         uint16_t max_cell_temp;
         uint8_t max_cell_id;
@@ -500,17 +525,18 @@ void compute_send_cell_temp_message(acc_data_t* bmsdata)
     acc_msg.len = sizeof(cell_temp_msg_data);
     memcpy(acc_msg.data, &cell_temp_msg_data, sizeof(cell_temp_msg_data));
 
-	#ifdef CHARGING_ENABLED
-	can_t* line = &can2;
-	#else
-	can_t* line = &can1;
-	#endif
+	if (is_charger_connected)
+		line = &can2;
+	else
+		line = &can1;
 
     can_send_msg(line, &acc_msg);
 }
 
 void compute_send_segment_temp_message(acc_data_t* bmsdata)
 {
+	can_t *line;
+
     struct __attribute__((__packed__)){
         int8_t segment1_average_temp;
         int8_t segment2_average_temp;
@@ -533,16 +559,17 @@ void compute_send_segment_temp_message(acc_data_t* bmsdata)
     acc_msg.len = sizeof(segment_temp_msg_data);
     memcpy(acc_msg.data, &segment_temp_msg_data, sizeof(segment_temp_msg_data));
 
-	#ifdef CHARGING_ENABLED
-	can_t* line = &can2;
-	#else
-	can_t* line = &can1;
-	#endif
+	if (is_charger_connected)
+		line = &can2;
+	else
+		line = &can1;
 
     can_send_msg(line, &acc_msg);
 }
 void compute_send_fault_message(uint8_t status, int16_t curr, int16_t in_dcl)
 {
+	can_t *line;
+
     struct __attribute__((__packed__)){
        uint8_t status;
 	   int16_t pack_curr;
@@ -561,17 +588,18 @@ void compute_send_fault_message(uint8_t status, int16_t curr, int16_t in_dcl)
     acc_msg.len = 5;
     memcpy(acc_msg.data, &fault_msg_data, sizeof(fault_msg_data));
 
-	#ifdef CHARGING_ENABLED
-	can_t* line = &can2;
-	#else
-	can_t* line = &can1;
-	#endif
+	if (is_charger_connected)
+		line = &can2;
+	else
+		line = &can1;
 
     can_send_msg(line, &acc_msg);
 }
 
 void compute_send_voltage_noise_message(acc_data_t* bmsdata)
 {
+	can_t *line;
+
 	struct __attribute__((__packed__)){
 		uint8_t seg1_noise;
 		uint8_t seg2_noise;
@@ -593,11 +621,10 @@ void compute_send_voltage_noise_message(acc_data_t* bmsdata)
 	acc_msg.len = sizeof(voltage_noise_msg_data);
 	memcpy(acc_msg.data, &voltage_noise_msg_data, sizeof(voltage_noise_msg_data));
 
-	#ifdef CHARGING_ENABLED
-	can_t* line = &can2;
-	#else
-	can_t* line = &can1;
-	#endif
+	if (is_charger_connected)
+		line = &can2;
+	else
+		line = &can1;
 
 	can_send_msg(line, &acc_msg);
 }	

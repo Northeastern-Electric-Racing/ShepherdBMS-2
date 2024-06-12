@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "can_handler.h"
+#include "compute.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -220,7 +221,10 @@ void DMA2_Stream0_IRQHandler(void)
 void CAN2_RX0_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN2_RX0_IRQn 0 */
-  can_receive_callback(&hcan2);
+  //can_receive_callback(&hcan2);
+
+  /* If ANY CAN msg is received on CAN 2, we can assume it is on charger cart */
+  compute_set_charger_connected();
   /* USER CODE END CAN2_RX0_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan2);
   /* USER CODE BEGIN CAN2_RX0_IRQn 1 */
@@ -234,7 +238,12 @@ void CAN2_RX0_IRQHandler(void)
 void CAN2_RX1_IRQHandler(void)
 {
   /* USER CODE BEGIN CAN2_RX1_IRQn 0 */
-  can_receive_callback(&hcan2);
+  //can_receive_callback(&hcan2);
+  
+  /* 
+   * If any message is heard on CAN1, then we know we are on car
+   */
+  compute_set_is_on_car();
   /* USER CODE END CAN2_RX1_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan2);
   /* USER CODE BEGIN CAN2_RX1_IRQn 1 */

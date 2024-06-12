@@ -21,8 +21,8 @@
 
 //cell limits
 #define MIN_VOLT            2.5
-#define MAX_VOLT            4.2
-#define MAX_CHARGE_VOLT     4.21
+#define MAX_VOLT            4.2 // we also stop charging at this voltage
+#define MAX_CHARGE_VOLT     4.21 // value we fault at when charging
 #define MAX_DELTA_V         0.015
 #define BAL_MIN_V           4.00
 #define MAX_CELL_TEMP       55
