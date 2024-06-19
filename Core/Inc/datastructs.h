@@ -12,8 +12,10 @@
  */
 typedef struct {
 	/* These are retrieved from the initial LTC comms */
-	uint16_t voltage[NUM_CELLS_PER_CHIP];	/* store voltage readings from each chip */
-	int8_t thermistor_reading[NUM_THERMS_PER_CHIP]; /* store all therm readings from each chip */
+	uint16_t voltage
+		[NUM_CELLS_PER_CHIP]; /* store voltage readings from each chip */
+	int8_t thermistor_reading
+		[NUM_THERMS_PER_CHIP]; /* store all therm readings from each chip */
 	int8_t thermistor_value[NUM_THERMS_PER_CHIP];
 	int error_reading;
 
@@ -22,8 +24,10 @@ typedef struct {
 	float cell_resistance[NUM_CELLS_PER_CHIP];
 	uint16_t open_cell_voltage[NUM_CELLS_PER_CHIP];
 
-	uint8_t noise_reading[NUM_CELLS_PER_CHIP]; /* bool representing noise ignored read */
-	uint8_t consecutive_noise[NUM_CELLS_PER_CHIP]; /* count representing consecutive noisy reads */
+	uint8_t noise_reading
+		[NUM_CELLS_PER_CHIP]; /* bool representing noise ignored read */
+	uint8_t consecutive_noise
+		[NUM_CELLS_PER_CHIP]; /* count representing consecutive noisy reads */
 } chipdata_t;
 
 /**
@@ -129,11 +133,11 @@ typedef struct {
  * @brief Represents individual BMS states
  */
 typedef enum {
-	BOOT_STATE,		/* State when BMS first starts up, used to initialize everything that needs
+	BOOT_STATE, /* State when BMS first starts up, used to initialize everything that needs
 					   configuring */
-	READY_STATE,	/* State when car is not on/BMS is not really doing anything */
+	READY_STATE, /* State when car is not on/BMS is not really doing anything */
 	CHARGING_STATE, /* State when car is on and is charging (Filling battery) */
-	FAULTED_STATE,	/* State when BMS has detected a catastrophic fault and we need to hault
+	FAULTED_STATE, /* State when BMS has detected a catastrophic fault and we need to hault
 					   operations */
 	NUM_STATES
 
@@ -143,13 +147,13 @@ typedef enum {
  * @brief Represents fault evaluation operators
  */
 typedef enum {
-	GT,	 /* fault if {data} greater than {threshold}             */
-	LT,	 /* fault if {data} less than {threshold}                */
-	GE,	 /* fault if {data} greater than or equal to {threshold} */
-	LE,	 /* fault if {data} less than or equal to {threshold}    */
-	EQ,	 /* fault if {data} equal to {threshold}                 */
+	GT, /* fault if {data} greater than {threshold}             */
+	LT, /* fault if {data} less than {threshold}                */
+	GE, /* fault if {data} greater than or equal to {threshold} */
+	LE, /* fault if {data} less than or equal to {threshold}    */
+	EQ, /* fault if {data} equal to {threshold}                 */
 	NEQ, /* fault if {data} not equal to {threshold}             */
-	NOP	 /* no operation, use for single threshold faults        */
+	NOP /* no operation, use for single threshold faults        */
 
 } fault_evalop_t;
 
@@ -157,7 +161,7 @@ typedef enum {
  * @brief Represents data to be packaged into a fault evaluation
  */
 typedef struct {
-	char* id;
+	char *id;
 	nertimer_t timer;
 
 	int data_1;

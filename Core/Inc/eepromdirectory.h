@@ -12,18 +12,14 @@
 /* index 0 = newest, index 4 = oldest */
 static uint32_t eeprom_faults[NUM_EEPROM_FAULTS];
 
-struct eeprom_partition 
-{
-    char *id;           /*  key  */
-    uint16_t size;      /* bytes */
-    uint16_t address;     /* start address */
+struct eeprom_partition {
+	char *id; /*  key  */
+	uint16_t size; /* bytes */
+	uint16_t address; /* start address */
 };
 
 struct eeprom_partition eeprom_data[NUM_EEPROM_ITEMS];
 /*  ____________KEY________________         _BYTES_   */
-  
-
-
 
 /**
  * @brief partitions eeprom addresses given table of data and size
@@ -46,8 +42,6 @@ uint16_t eeprom_get_index(char *key);
  * 
  */
 char *eeprom_get_key(int index);
-
-
 
 /**
  * @brief fills passed data pointer with data from eeprom
@@ -88,6 +82,5 @@ void log_fault(uint32_t fault_code);
  */
 
 void get_faults();
-
 
 #endif

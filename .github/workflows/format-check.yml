@@ -1,0 +1,20 @@
+name: Code Style Check
+
+on: [push]
+
+jobs:
+  formatting-check:
+    name: Check format of C
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Run clang-format style check for C/C++ sources
+      uses: Northeastern-Electric-Racing/clang-format-action@main
+      with:
+        clang-format-version: '18'
+        # only check core, embedded base covered internally
+        check-path: "Core/"
+        # use the clang-format from embedded base
+        format-filepath: "./Drivers/Embedded-Base/clang-format"

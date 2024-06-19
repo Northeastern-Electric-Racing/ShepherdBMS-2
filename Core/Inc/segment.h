@@ -33,14 +33,16 @@ void segment_enable_balancing(bool balance_enable);
  * @param cell_num
  * @param balance_enable
  */
-void cell_enable_balancing(uint8_t chip_num, uint8_t cell_num, bool balance_enable);
+void cell_enable_balancing(uint8_t chip_num, uint8_t cell_num,
+			   bool balance_enable);
 
 /**
  * @brief Sets each cell to whatever state is passed in the boolean config area
  *
  * @param discharge_config
  */
-void segment_configure_balancing(bool discharge_config[NUM_CHIPS][NUM_CELLS_PER_CHIP]);
+void segment_configure_balancing(
+	bool discharge_config[NUM_CHIPS][NUM_CELLS_PER_CHIP]);
 
 /**
  * @brief Returns if a specific cell is balancing

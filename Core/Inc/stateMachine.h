@@ -30,7 +30,6 @@ bool sm_balancing_check(acc_data_t *bmsdata);
 */
 bool sm_charging_check(acc_data_t *bmsdata);
 
-
 /**
 * @brief Returns any new faults or current faults that have come up
 * @note Should be bitwise OR'ed with the current fault status
@@ -40,13 +39,13 @@ bool sm_charging_check(acc_data_t *bmsdata);
 */
 uint32_t sm_fault_return(acc_data_t *accData);
 
- /**
+/**
  * @brief Used in parellel to faultReturn(), calculates each fault to append the fault status
  * 
  * @param index
  * @return fault_code
  */
-uint32_t sm_fault_eval(fault_eval_t* index);
+uint32_t sm_fault_eval(fault_eval_t *index);
 
 /**
  * @brief handles the state machine, calls the appropriate handler function and runs every loop functions
@@ -71,6 +70,5 @@ void sm_broadcast_current_limit(acc_data_t *bmsdata);
  *
 */
 void calculate_pwm(acc_data_t *bmsdata);
-
 
 #endif //BMS_STATES_H

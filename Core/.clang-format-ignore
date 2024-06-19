@@ -1,0 +1,6 @@
+./*/stm32*
+./*/sys*
+./*/FreeRTOS*
+./*/freertos*
+./*/main*
+./Startup/*
